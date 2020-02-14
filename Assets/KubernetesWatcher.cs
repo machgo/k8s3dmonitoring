@@ -34,7 +34,7 @@ public class KubernetesWatcher : MonoBehaviour
 
         foreach (var o in newPods)
         {
-            var gm = Instantiate(prefab, new Vector3((float)rand.NextDouble() * 10, 17, (float)rand.NextDouble() * 10), new Quaternion());
+            var gm = Instantiate(prefab, new Vector3((float)rand.NextDouble() * 4, 17, (float)rand.NextDouble() * 4), new Quaternion());
             gm.name = o.Object.metadata.name;
 
             Color background = new Color(
