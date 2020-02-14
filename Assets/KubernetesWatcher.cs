@@ -1,6 +1,5 @@
 ﻿using Assets;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
@@ -24,6 +23,8 @@ public class KubernetesWatcher : MonoBehaviour
     }
     void Update()
     {
+        var rand = new System.Random();
+
         apiCheckCountdown -= Time.deltaTime;
         if (apiCheckCountdown <= 0)
         {
@@ -33,8 +34,17 @@ public class KubernetesWatcher : MonoBehaviour
 
         foreach (var o in newPods)
         {
-            var gm = Instantiate(prefab, new Vector3(0,7), new Quaternion());
+            var gm = Instantiate(prefab, new Vector3((float)rand.NextDouble() * 10, 17, (float)rand.NextDouble() * 10), new Quaternion());
             gm.name = o.Object.metadata.name;
+
+            Color background = new Color(
+                UnityEngine.Random.Range(0f, 1f),
+                UnityEngine.Random.Range(0f, 1f),
+                UnityEngine.Random.Range(0f, 1f)
+            );
+
+
+            gm.GetComponent<Renderer>().material.color = background;
             newPods.Dequeue();
         }
 
