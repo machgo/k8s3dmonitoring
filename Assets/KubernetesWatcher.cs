@@ -1,5 +1,6 @@
 ﻿using Assets;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
@@ -13,8 +14,8 @@ public class KubernetesWatcher : MonoBehaviour
     private float apiCheckCountdown = API_CHECK_MAXTIME;
     public GameObject prefab;
 
-    private Queue<PodEvent> newPods = new Queue<PodEvent>();
-    private Queue<PodEvent> deletePods = new Queue<PodEvent>();
+    private ConcurrentQueue<PodEvent> newPods = new ConcurrentQueue<PodEvent>();
+    private ConcurrentQueue<PodEvent> deletePods = new ConcurrentQueue<PodEvent>();
 
 
     void Start()
@@ -45,12 +46,12 @@ public class KubernetesWatcher : MonoBehaviour
 
 
             gm.GetComponent<Renderer>().material.color = background;
-            newPods.Dequeue();
+            newPods.TryDequeue(out _);
         }
 
         foreach (var o in deletePods)
         {
-            deletePods.Dequeue();
+            deletePods.TryDequeue(out _);
             var gm = GameObject.Find(o.Object.metadata.name);
             Destroy(gm);
         }
