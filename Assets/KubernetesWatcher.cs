@@ -3,6 +3,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Text;
@@ -18,6 +19,7 @@ public class KubernetesWatcher : MonoBehaviour
     private ConcurrentQueue<PodEvent> newPods = new ConcurrentQueue<PodEvent>();
     private ConcurrentQueue<PodEvent> deletePods = new ConcurrentQueue<PodEvent>();
 
+    private int NumberNodes = 0;
 
     void Start()
     {
@@ -36,15 +38,44 @@ public class KubernetesWatcher : MonoBehaviour
 
         foreach (var o in newPods)
         {
-            var gm = Instantiate(prefab, new Vector3(prefab.transform.position.x + (float)rand.NextDouble() * 4, 17, prefab.transform.position.z + (float)rand.NextDouble() * 4), new Quaternion());
-            gm.name = o.Object.metadata.name;
-
             Color background = new Color(
                 UnityEngine.Random.Range(0f, 1f),
                 UnityEngine.Random.Range(0f, 1f),
                 UnityEngine.Random.Range(0f, 1f)
             );
 
+            var node = GameObject.Find(o.Object.spec.nodeName);
+            if (node == null) {
+                node = Instantiate(GameObject.Find("Node"), this.transform.parent);
+                node.name = o.Object.spec.nodeName;
+                node.transform.position = node.transform.position + new Vector3(NumberNodes * 15, 0);
+                NumberNodes++;
+            }
+
+            var a = node.transform.Find("Cube").gameObject;
+            var gm = Instantiate(a,node.transform);
+            gm.name = o.Object.metadata.name;
+            gm.SetActive(true);
+            gm.transform.position = node.transform.position + new Vector3(0, 20);
+            if (o.Object.spec.containers[0].resources.limits.cpu != null)
+            {
+                var scale = gm.transform.localScale;
+                var c = Int32.Parse(GetNumbers(o.Object.spec.containers[0].resources.limits.cpu));
+                var m = Int32.Parse(GetNumbers(o.Object.spec.containers[0].resources.limits.memory));
+                scale.Set(3, 3, 3); // todo: correct calcs
+                gm.transform.localScale = scale;
+            }
+            else {
+                var scale = gm.transform.localScale;
+                scale.Set(2, 2, 2); // todo: correct calcs
+                gm.transform.localScale = scale;
+            }
+
+
+            //TODO:
+            //generate size of cubes based on limits
+            //generate color based on namespace or container image? maybe generate a hash and convert this into rgb numbers?
+            //instantiate 4 walls per node and spawn the cubes inside
 
             gm.GetComponent<Renderer>().material.color = background;
             newPods.TryDequeue(out _);
@@ -58,6 +89,13 @@ public class KubernetesWatcher : MonoBehaviour
         }
 
     }
+
+
+    private static string GetNumbers(string input)
+    {
+        return new string(input.Where(c => char.IsDigit(c)).ToArray());
+    }
+
 
 
     public async void CheckRandomAsync()
@@ -79,7 +117,10 @@ public class KubernetesWatcher : MonoBehaviour
     private async Task<int> GetRandomFromApi()
     {
         HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url + "/api/v1/pods?watch=1");
-        request.Headers.Add(HttpRequestHeader.Authorization, "Bearer " + token);
+        if (token != "")
+        {
+            request.Headers.Add(HttpRequestHeader.Authorization, "Bearer " + token);
+        }
         request.KeepAlive = true;
         request.ServerCertificateValidationCallback += (sender, certificate, chain, sslPolicyErrors) => true;
 
