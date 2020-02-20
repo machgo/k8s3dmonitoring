@@ -4,6 +4,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
+using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
@@ -35,7 +36,7 @@ public class KubernetesWatcher : MonoBehaviour
 
         foreach (var o in newPods)
         {
-            var gm = Instantiate(prefab, new Vector3((float)rand.NextDouble() * 4, 17, (float)rand.NextDouble() * 4), new Quaternion());
+            var gm = Instantiate(prefab, new Vector3(prefab.transform.position.x + (float)rand.NextDouble() * 4, 17, prefab.transform.position.z + (float)rand.NextDouble() * 4), new Quaternion());
             gm.name = o.Object.metadata.name;
 
             Color background = new Color(
@@ -71,10 +72,16 @@ public class KubernetesWatcher : MonoBehaviour
         //}
 
     }
+
+    public string token;
+    public string url;
+
     private async Task<int> GetRandomFromApi()
     {
-        HttpWebRequest request = (HttpWebRequest)WebRequest.Create("http://localhost:8001/api/v1/pods?watch=1");
+        HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url + "/api/v1/pods?watch=1");
+        request.Headers.Add(HttpRequestHeader.Authorization, "Bearer " + token);
         request.KeepAlive = true;
+        request.ServerCertificateValidationCallback += (sender, certificate, chain, sslPolicyErrors) => true;
 
 
         using (HttpWebResponse resp = (HttpWebResponse)request.GetResponse())

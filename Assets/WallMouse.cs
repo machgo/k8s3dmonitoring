@@ -19,8 +19,15 @@ public class WallMouse : MonoBehaviour
             tooltip.transform.position = hit.point + Camera.main.transform.forward * -1;
 
             text.text = o.name;
-            
-            tooltip.SetActive(true);
+            StartCoroutine(ShowTooltip());
+
         }
+    }
+
+    IEnumerator ShowTooltip()
+    {
+        tooltip.SetActive(true);
+        yield return new WaitForSeconds(5);
+        tooltip.SetActive(false);
     }
 }
