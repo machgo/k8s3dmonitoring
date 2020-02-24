@@ -23,7 +23,7 @@ public class Explode : MonoBehaviour
     {
         Vector3 explosionPos = transform.position;
         float radius = 5;
-        float power = 600;
+        float power = 500;
         Collider[] colliders = Physics.OverlapSphere(explosionPos, radius);
         foreach (Collider hit in colliders)
         {

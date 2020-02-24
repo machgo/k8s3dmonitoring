@@ -17,7 +17,7 @@ public class RandomExplosion : MonoBehaviour
         {
             Vector3 explosionPos = transform.position;
             float radius = 10;
-            float power = 2000;
+            float power = 500;
             Collider[] colliders = Physics.OverlapSphere(explosionPos, radius);
             foreach (Collider hit in colliders)
             {
