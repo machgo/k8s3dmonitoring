@@ -116,43 +116,43 @@ public class KubernetesWatcher : MonoBehaviour
 
     private async Task<int> GetRandomFromApi()
     {
-        HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url + "/api/v1/pods?watch=1");
-        if (token != "")
+        while (true)
         {
-            request.Headers.Add(HttpRequestHeader.Authorization, "Bearer " + token);
-        }
-        request.KeepAlive = true;
-        request.ServerCertificateValidationCallback += (sender, certificate, chain, sslPolicyErrors) => true;
-
-
-        using (HttpWebResponse resp = (HttpWebResponse)request.GetResponse())
-        {
-            using (Stream sm = resp.GetResponseStream())
+            HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url + "/api/v1/pods?watch=1");
+            if (token != "")
             {
-                using (StreamReader sr = new StreamReader(sm, Encoding.Default))
+                request.Headers.Add(HttpRequestHeader.Authorization, "Bearer " + token);
+            }
+            request.KeepAlive = true;
+            request.ServerCertificateValidationCallback += (sender, certificate, chain, sslPolicyErrors) => true;
+
+
+            using (HttpWebResponse resp = (HttpWebResponse)request.GetResponse())
+            {
+                using (Stream sm = resp.GetResponseStream())
                 {
-                    string line;
-                    while ((line = await sr.ReadLineAsync().ConfigureAwait(false)) != null)
+                    using (StreamReader sr = new StreamReader(sm, Encoding.Default))
                     {
-
-                        Console.WriteLine(line);
-                        var info = JsonUtility.FromJson<PodEvent>(line.Replace("object", "Object").Replace("namespace", "Namespace"));
-
-                        if (info.type == "ADDED")
+                        string line;
+                        while ((line = await sr.ReadLineAsync().ConfigureAwait(false)) != null)
                         {
-                            newPods.Enqueue(info);
-                        }
-                        if (info.type == "DELETED")
-                        {
-                            deletePods.Enqueue(info);
-                        }
 
+                            Console.WriteLine(line);
+                            var info = JsonUtility.FromJson<PodEvent>(line.Replace("object", "Object").Replace("namespace", "Namespace"));
+
+                            if (info.type == "ADDED")
+                            {
+                                newPods.Enqueue(info);
+                            }
+                            if (info.type == "DELETED")
+                            {
+                                deletePods.Enqueue(info);
+                            }
+
+                        }
                     }
                 }
             }
         }
-        return 0;
     }
-
-
 }
