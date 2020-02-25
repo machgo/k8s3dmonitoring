@@ -9,6 +9,7 @@ using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class KubernetesWatcher : MonoBehaviour
 {
@@ -131,43 +132,42 @@ public class KubernetesWatcher : MonoBehaviour
 
     private async Task<int> GetRandomFromApi()
     {
-        while (true)
+        HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url + "/api/v1/pods?watch=1");
+        if (token != "")
         {
-            HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url + "/api/v1/pods?watch=1");
-            if (token != "")
-            {
-                request.Headers.Add(HttpRequestHeader.Authorization, "Bearer " + token);
-            }
-            request.KeepAlive = true;
-            request.ServerCertificateValidationCallback += (sender, certificate, chain, sslPolicyErrors) => true;
+            request.Headers.Add(HttpRequestHeader.Authorization, "Bearer " + token);
+        }
+        request.KeepAlive = true;
+        request.ServerCertificateValidationCallback += (sender, certificate, chain, sslPolicyErrors) => true;
 
 
-            using (HttpWebResponse resp = (HttpWebResponse)request.GetResponse())
+        using (HttpWebResponse resp = (HttpWebResponse)request.GetResponse())
+        {
+            using (Stream sm = resp.GetResponseStream())
             {
-                using (Stream sm = resp.GetResponseStream())
+                using (StreamReader sr = new StreamReader(sm, Encoding.Default))
                 {
-                    using (StreamReader sr = new StreamReader(sm, Encoding.Default))
+                    string line;
+                    while ((line = await sr.ReadLineAsync().ConfigureAwait(false)) != null)
                     {
-                        string line;
-                        while ((line = await sr.ReadLineAsync().ConfigureAwait(false)) != null)
+
+                        Console.WriteLine(line);
+                        var info = JsonUtility.FromJson<PodEvent>(line.Replace("object", "Object").Replace("namespace", "Namespace"));
+
+                        if (info.type == "ADDED")
                         {
-
-                            Console.WriteLine(line);
-                            var info = JsonUtility.FromJson<PodEvent>(line.Replace("object", "Object").Replace("namespace", "Namespace"));
-
-                            if (info.type == "ADDED")
-                            {
-                                newPods.Enqueue(info);
-                            }
-                            if (info.type == "DELETED")
-                            {
-                                deletePods.Enqueue(info);
-                            }
-
+                            newPods.Enqueue(info);
                         }
+                        if (info.type == "DELETED")
+                        {
+                            deletePods.Enqueue(info);
+                        }
+
                     }
                 }
             }
         }
+        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+        return 0;
     }
 }
